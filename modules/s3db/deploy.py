@@ -378,6 +378,7 @@ class S3DeploymentModel(S3Model):
                      organisation_id(),
                      # @ToDo: This makes a lot more sense as person_id not human_resource_id
                      human_resource_id(empty = False,
+                                       ondelete = "CASCADE",
                                        label = T(hr_label),
                                        ),
                      Field("active", "boolean",
