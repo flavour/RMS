@@ -244,6 +244,13 @@
         <label>OrgGroup</label>
     </column>
 
+    <column name="Programme">
+        <!-- Special Element match for key generation -->
+        <match>|Programme|Program|</match>
+        <label>Programme</label>
+        <label>Program</label>
+    </column>
+
     <!-- For Inventory -->
     <column name="Units">
         <label>Units</label>
