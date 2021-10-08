@@ -52,8 +52,8 @@ class S3MainMenu(default.S3MainMenu):
             # No specific Roles
             # Just show Profile on main menu
             return [MM("Profile", c="hrm", f="person",
-                       args=[str(auth.s3_logged_in_person())],
-                       vars={"profile":1},
+                       args = [str(auth.s3_logged_in_person())],
+                       vars = {"profile":1},
                        ),
                     ]
 
