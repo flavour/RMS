@@ -73,6 +73,7 @@ class S3MainMenu(default.S3MainMenu):
         def hrm(item):
             return has_roles((ORG_ADMIN,
                               "hr_manager",
+                              "hr_editor",
                               "hr_assistant",
                               "training_coordinator",
                               "training_assistant",
