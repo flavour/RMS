@@ -101,6 +101,7 @@ class AuthS3(Auth):
             - s3_link_to_member
             - s3_approver
             - s3_password
+            - s3_send_welcome_email
 
         - S3 custom authentication methods:
             - s3_impersonate

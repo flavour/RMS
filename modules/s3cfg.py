@@ -1922,6 +1922,22 @@ class S3Config(Storage):
         """
         return self.L10n.get("translate_org_organisation", False)
 
+    def get_L10n_translate_org_organisation_unique(self):
+        """
+            Whether Organisation name/acronym translations should be unique per-language
+            This defaults to True for SQLite as it can't do DISTINCT ON & so org_OrganisationRepresent can break 
+        """
+        translate_org_organisation_unique = self.L10n.get("translate_org_organisation_unique")
+        if translate_org_organisation_unique is not None:
+            # Explicitly set
+            return translate_org_organisation_unique
+        if self.get_database_type() == "postgres":
+            # Don't need to be unique
+            return False
+        else:
+            # Really should be unique
+            return True
+
     def get_L10n_translate_org_site(self):
         """
             Whether to translate Site names

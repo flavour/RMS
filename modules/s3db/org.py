@@ -1218,10 +1218,78 @@ class S3OrganisationNameModel(S3Model):
                                                             "language",
                                                             ),
                                                  ),
+                       onvalidation = self.org_name_onvalidation,
                        )
 
         # Pass names back to global scope (s3.*)
         return {}
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def org_name_onvalidation(form):
+        """
+            Prevent an Organisation from having multiple translations for the same language
+
+            @param form: the FORM
+        """
+
+        if not current.deployment_settings.get_L10n_translate_org_organisation_unique():
+            return
+
+        form_vars = form.vars
+        if "id" in form_vars:
+            record_id = form_vars.id
+        elif hasattr(form, "record_id"):
+            record_id = form.record_id
+        else:
+            record_id = None
+
+        organisation_id = form_vars.get("oraganisation_id")
+        language = form_vars.get("language")
+
+        db = current.db
+        s3db = current.s3db
+        table = s3db.org_organisation_name
+
+        if not record_id:
+            # New records - use defaults as required
+            if not organisation_id:
+                organisation_id = table.organisation_id.default
+            if not language:
+                language = table.language.default
+
+        elif not organisation_id or not language:
+            # Reload the record
+            query = (table.id == record_id) & \
+                    (table.deleted != True)
+            record = db(query).select(table.organisation_id,
+                                      table.language,
+                                      limitby = (0, 1),
+                                      ).first()
+            if not record:
+                # Nothing we can check
+                return
+            if not language:
+                language = record.language
+            if not organisation_id:
+                organisation_id = record.organisation_id
+
+        # Try to find a duplicate
+        query = (table.organisation_id == organisation_id) & \
+                (table.language == language) & \
+                (table.deleted == False)
+        if record_id:
+            # Exclude this record during update
+            query = (table.id != record_id) & query
+
+        duplicate = db(query).select(table.id,
+                                     limitby = (0, 1),
+                                     ).first()
+
+        # Reject form if duplicate exists
+        if duplicate:
+            error = current.T("There is already a translation for this language!")
+            form.errors["language"] = error
 
 # =============================================================================
 class S3OrganisationBranchModel(S3Model):
@@ -5324,13 +5392,31 @@ class org_OrganisationRepresent(S3Represent):
 
                 left.append(lptable.on(lptable.organisation_id == btable.organisation_id))
 
+            settings = current.deployment_settings
+            if settings.get_L10n_translate_org_organisation_unique():
+                # limitby count will always be correct (assuming setting applied before any bad data was entered!)
+                distinct = False
+            elif settings.get_database_type() == "postgres":
+                # Postgres can do DISTINCT ON & we want to ensure that the limitby count is correct
+                distinct = otable.id
+            else:
+                # DISTINCT ON is not supported by SQLite
+                current.log.warning("If you need multiple translations for Organisation names then need to use PostgreSQL to avoid issues with org_OrganisationRepresent!")
+                distinct = False
+        else:
+            # limitby count will always be correct
+            distinct = False
+
         count = len(values)
         if count == 1:
             query = (otable.id == values[0])
         else:
             query = (otable.id.belongs(values))
 
-        rows = current.db(query).select(left=left, limitby=(0, count), *fields)
+        rows = current.db(query).select(distinct = distinct,
+                                        left = left,
+                                        limitby = (0, count),
+                                        *fields)
         self.queries += 1
 
         return rows
